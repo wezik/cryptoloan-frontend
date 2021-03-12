@@ -1,6 +1,9 @@
 ## About
 This project is a Front End in Vaadin created for [Crypto Loan Rest API](https://github.com/wezik/cryptoloan)
 
+## Preview
+[![](https://i.snipboard.io/cKVk6L.jpg)](https://i.snipboard.io/87NGy6.jpg) [![](https://i.snipboard.io/i2nrTb.jpg)](https://i.snipboard.io/RP91Lf.jpg)
+
 ## Requirements
 Java 11
 
