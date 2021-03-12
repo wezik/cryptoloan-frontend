@@ -199,9 +199,14 @@ public class HomeView extends BaseView {
 
     private void updateExchangeInLoanTakingProcess(NumberField numberField,LoanType loanType, Double amount, String currency) {
         if (amount==null || amount<0) amount=0.0;
+        int loops = (int) loanType.getTimePeriod().doubleValue()/12;
+        BigDecimal resultValue = BigDecimal.valueOf(amount);
+        for (int i=0; i<loops; i++) {
+            resultValue = resultValue.add(resultValue.multiply(BigDecimal.valueOf(loanType.getInterest()*0.01)));
+        }
         numberField.setValue(
-                !currency.equals("BTC") ? BigDecimal.valueOf(amount+(amount*(loanType.getInterest()*0.01))).setScale(2,RoundingMode.CEILING).doubleValue()
-                        : BigDecimal.valueOf(amount+(amount*(loanType.getInterest()*0.01))).stripTrailingZeros().doubleValue()
+                !currency.equals("BTC") ? resultValue.setScale(2,RoundingMode.CEILING).doubleValue()
+                        : resultValue.stripTrailingZeros().doubleValue()
         );
     }
 
