@@ -1,0 +1,117 @@
+#main-panel {
+    background-color: #e7e7e7;
+    border-radius: 3px;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px 2px #3333331A;
+    padding: 3em;
+    min-width: 80vw;
+    max-width: 80vw;
+}
+
+#main-view {
+    justify-content: center;
+    align-items: center;
+}
+
+#deleteButton {
+    color: red;
+}
+
+#main-panel a {
+    margin: 5px;
+    color: black;
+    padding: .5em;
+    background-color: #b7c9d4;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#hDiv {
+    width: 100%;
+    display: inline-flex;
+}
+
+#hDivLeft {
+    width: 50%;
+    justify-content: center;
+    align-items: center;
+}
+
+#hDivLeft vaadin-combo-box {
+    max-width: 7em;
+    margin: .2em;
+}
+
+#amountField {
+    max-width: 6em;
+}
+
+#hDivRight {
+    width: 50%;
+}
+
+
+#deleteDiv {
+    margin-left: 5em;
+}
+
+#idInput {
+    max-width: 4em;
+    margin-right: .3em;
+    margin-left: .3em;
+}
+
+#inputField {
+    margin-left: .3em;
+    margin-right: .3em;
+}
+
+#main-panel a:hover {
+    background-color: #9db3c3;
+    text-decoration: none;
+}
+
+#main-panel h1 {
+    margin: 0 0 1em;
+    padding: 0;
+}
+
+#heroDiv {
+    margin-top: 5em;
+    justify-content: center;
+    align-items: center;
+}
+
+#heroHeroDiv {
+    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+}
+
+#heroHeroDiv vaadin-number-field,vaadin-combo-box {
+    width: 15em;
+}
+
+#currenciesHeroHeroDiv {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 15em;
+}
+
+#currenciesHeroHeroDiv vaadin-combo-box {
+    max-width: 7em;
+    margin: .5em .5em 0;
+}
+
+#heroDiv H1 {
+    color: darkcyan;
+}
+
+#submit {
+    width: 15em;
+    background-color: lightblue;
+}

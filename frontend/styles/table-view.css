@@ -1,0 +1,82 @@
+#main-panel {
+    background-color: #e7e7e7;
+    border-radius: 3px;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px 2px #3333331A;
+    padding: 3em;
+    min-width: 80vw;
+    max-width: 80vw;
+}
+
+#main-view {
+    justify-content: center;
+    align-items: center;
+}
+
+#deleteButton {
+    color: red;
+}
+
+#main-panel a {
+    margin: 5px;
+    color: black;
+    padding: .5em;
+    background-color: #b7c9d4;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#hDiv {
+    display: inline-flex;
+}
+
+#deleteDiv {
+    margin-left: 5em;
+}
+
+#idInput {
+    max-width: 3em;
+    margin-right: .3em;
+    margin-left: .3em;
+}
+
+#inputField {
+    margin-left: .3em;
+    margin-right: .3em;
+}
+
+#main-panel h1 {
+    margin: 0 0 1em;
+    padding: 0;
+}
+
+#addDiv {
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.booleanBox {
+    max-width: 6em;
+}
+
+.dateBox {
+    max-width: 8em;
+}
+
+.currencyBox {
+    max-width: 7em;
+}
+
+.idBox {
+    max-width: 6em;
+}
+
+.amountBox {
+    max-width: 7em;
+}
+
+.shortenedComboBox {
+    max-width: 9em;
+}
+
