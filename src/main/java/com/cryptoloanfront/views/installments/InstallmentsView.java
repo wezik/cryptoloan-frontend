@@ -138,7 +138,7 @@ public class InstallmentsView extends BaseView {
 
             Loan loanEntry = loansMap.get(loan.getValue());
             BigDecimal amountEntry = BigDecimal.valueOf(Double.parseDouble(loanEntry.getAmountToPay()))
-                    .subtract(BigDecimal.valueOf(loanEntry.getInstallmentsTotal()))
+                    .divide(BigDecimal.valueOf(loanEntry.getInstallmentsTotal()), 9, RoundingMode.CEILING)
                     .stripTrailingZeros();
 
             BigDecimal finalAmount = amountEntry.multiply(api.exchangeCurrency(loanEntry.getCurrencyBorrowed(),loanEntry.getCurrencyPaidIn()));
