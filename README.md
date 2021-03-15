@@ -10,9 +10,11 @@ Java 11
 Gradle
 
 ## How to run
-build your gradle with `gradlew build` in terminal
+Build your gradle with `gradlew build` in terminal
 
-go to `localhost:8081` in your browser
+Run the project
+
+Go to `localhost:8081` in your browser
 
 ## How to configure
 You can also customize your port in [application.properties](https://github.com/wezik/cryptoloan-frontend/blob/main/src/main/resources/application.properties#L1)
