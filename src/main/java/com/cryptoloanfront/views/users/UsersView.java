@@ -1,16 +1,15 @@
 package com.cryptoloanfront.views.users;
 
 import com.cryptoloanfront.domain.User;
+import com.cryptoloanfront.factory.DivFactory;
+import com.cryptoloanfront.factory.FieldFactory;
 import com.cryptoloanfront.service.CryptoLoanService;
-import com.cryptoloanfront.views.BaseView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
@@ -24,45 +23,67 @@ import java.util.List;
 @PageTitle("Crypto Loan")
 @Route("users")
 @CssImport("./styles/table-view.css")
-public class UsersView extends BaseView {
+public class UsersView extends Div {
 
+    private Button addButton, updateButton, clearButton, deleteButton;
+    private NumberField idField, deleteIdField, securityNumberField;
+    private TextField nameField, lastNameField, phoneNumberField;
+    private Grid<User> grid;
+    private final DivFactory divFactory;
+    private final FieldFactory fieldFactory;
     private final List<User> users;
     private final CryptoLoanService api;
-    private final Grid<User> userDataGrid;
 
-
-    public UsersView(@Autowired CryptoLoanService cryptoLoanService) {
-        api = cryptoLoanService;
-        users = api.getUsers();
-        userDataGrid = createUserDataGrid();
-
-        Div main = getMain();
-
-        Div horizontalDiv = new Div();
-        horizontalDiv.setId("hDiv");
-
-        Div addUserDiv = createAddUserDiv();
-
-        Div deleteUserDiv = createRemoveUserDiv();
-
-        horizontalDiv.add(addUserDiv,deleteUserDiv);
-
-
-
-        main.add(new H1("Users"));
-        main.add(horizontalDiv);
-        main.add(userDataGrid);
-
-        Div annotation = new Div();
-        annotation.setText("Fields annotated with (*) are not required or even recommended when adding an entity.");
-        Div annotation2 = new Div();
-        annotation2.setText("Also select an entity to edit it faster.");
-        main.add(annotation,annotation2);
-
+    public UsersView(@Autowired CryptoLoanService cryptoLoanService,
+                    @Autowired DivFactory divFactory,
+                    @Autowired FieldFactory fieldFactory) {
+        this.divFactory = divFactory;
+        this.fieldFactory = fieldFactory;
+        this.api = cryptoLoanService;
+        this.users = api.getUsers();
+        Div addDiv = createAddDiv();
+        Div deleteDiv = createDeleteDiv();
+        Div gridDiv = createGridDiv();
+        createInteractions();
+        Div main = divFactory.createCompleteDiv("Users",addDiv,deleteDiv,gridDiv);
         add(main);
     }
 
-    private Grid<User> createUserDataGrid() {
+    private Div createAddDiv() {
+        Div addDiv = divFactory.createDivWithId("addDiv");
+        idField = fieldFactory.createIdNumberField();
+        nameField = fieldFactory.createTextField("First Name");
+        lastNameField = fieldFactory.createTextField("Last Name");
+        phoneNumberField = fieldFactory.createTextField("Phone Number","+12 345 678 910");
+        securityNumberField = fieldFactory.createNumberField("Social Security Num","012345678");
+        List<Component> addMenuFieldsList = List.of(idField,nameField,lastNameField,phoneNumberField,securityNumberField);
+
+        addButton = fieldFactory.createAddButton();
+        updateButton = fieldFactory.createUpdateButton();
+        clearButton = fieldFactory.createClearButton();
+
+        addMenuFieldsList.forEach(addDiv::add);
+        addDiv.add(addButton,updateButton,clearButton);
+
+        return addDiv;
+    }
+
+    private Div createDeleteDiv() {
+        Div deleteDiv = divFactory.createDivWithId("deleteDiv");
+        deleteIdField = fieldFactory.createDeleteIdNumberField();
+        deleteButton = fieldFactory.createDeleteButton();
+        deleteDiv.add(deleteIdField,deleteButton);
+        return deleteDiv;
+    }
+
+    private Div createGridDiv() {
+        Div div = divFactory.createDivWithId("grid-div");
+        grid = createGrid();
+        div.add(grid);
+        return div;
+    }
+
+    private Grid<User> createGrid() {
         Grid<User> grid = new Grid<>();
         grid.setItems(users);
         grid.addColumn(User::getId).setHeader("ID");
@@ -73,85 +94,74 @@ public class UsersView extends BaseView {
         return grid;
     }
 
-    private Div createAddUserDiv() {
-        Div addUserDiv = new Div();
-        addUserDiv.setId("addDiv");
-        NumberField id = new NumberField("ID *");
-        id.setPlaceholder("0");
-        id.setId("idInput");
-        TextField name = new TextField("First Name");
-        name.setPlaceholder("First Name");
-        TextField lastName = new TextField("Last Name");
-        lastName.setPlaceholder("Last Name");
-        TextField phoneNumber = new TextField("Phone Number");
-        phoneNumber.setPlaceholder("+12 345 678 910");
-        NumberField securityNumber = new NumberField("Social Security Num");
-        securityNumber.setPlaceholder("012345678");
-        List<Component> userData = List.of(id,name,lastName,phoneNumber,securityNumber);
-        for (int i=1; i<userData.size(); i++) {
-            userData.get(i).setId("inputField");
-        }
-
-        userDataGrid.addSelectionListener(e -> {
-            if (e.getFirstSelectedItem().isPresent()) {
-                User user = e.getFirstSelectedItem().get();
-                id.setValue(user.getId().doubleValue());
-                name.setValue(user.getFirstName());
-                lastName.setValue(user.getLastName());
-                phoneNumber.setValue(user.getPhoneNumber());
-                securityNumber.setValue(Double.parseDouble(user.getSocialSecurityNumber()));
-            }
-        });
-
-        Button add = new Button("Add");
-        add.addClickListener(e -> {
-            api.saveUser(new User(null,
-                    name.getValue(),
-                    lastName.getValue(),
-                    phoneNumber.getValue(),
-                    BigDecimal.valueOf(securityNumber.getValue()).setScale(0,RoundingMode.CEILING).toPlainString()));
-            UI.getCurrent().getPage().reload();
-            Notification.show("User "+name.getValue()+" Added");
-        });
-        Button update = new Button("Update");
-        update.addClickListener(e -> {
-            api.updateUser(new User(id.getValue().longValue(),
-                    name.getValue(),
-                    lastName.getValue(),
-                    phoneNumber.getValue(),
-                    BigDecimal.valueOf(securityNumber.getValue()).setScale(0,RoundingMode.CEILING).toPlainString()));
-            UI.getCurrent().getPage().reload();
-            Notification.show("User "+id.getValue().intValue()+" Updated");
-        });
-
-        Button clear = new Button("Clear");
-        clear.addClickListener(e -> {
-            id.clear();
-            name.clear();
-            lastName.clear();
-            phoneNumber.clear();
-            securityNumber.clear();
-        });
-        userData.forEach(addUserDiv::add);
-        addUserDiv.add(add,update,clear);
-        return addUserDiv;
+    private void createInteractions() {
+        createGridSelectionListener();
+        createClickListenerForAddButton();
+        createClickListenerForUpdateButton();
+        createClickListenerForClearButton();
+        createClickListenerForDeleteButton();
     }
 
-    private Div createRemoveUserDiv() {
-        Div deleteUserDiv = new Div();
-        deleteUserDiv.setId("deleteDiv");
-        NumberField deleteId = new NumberField("ID");
-        deleteId.setPlaceholder("0");
-        deleteId.setId("idInput");
-        Button deleteButton = new Button("Delete");
-        deleteButton.addClickListener(e -> {
-            api.deleteUser(deleteId.getValue().intValue());
-            UI.getCurrent().getPage().reload();
-            Notification.show("User "+deleteId.getValue().intValue()+" Deleted");
+    private void createGridSelectionListener() {
+        grid.addSelectionListener(e -> {
+            if (e.getFirstSelectedItem().isPresent()) {
+                User user = e.getFirstSelectedItem().get();
+                idField.setValue(user.getId().doubleValue());
+                deleteIdField.setValue(user.getId().doubleValue());
+                nameField.setValue(user.getFirstName());
+                lastNameField.setValue(user.getLastName());
+                phoneNumberField.setValue(user.getPhoneNumber());
+                securityNumberField.setValue(Double.parseDouble(user.getSocialSecurityNumber()));
+            }
         });
-        deleteButton.setId("deleteButton");
-        deleteUserDiv.add(deleteId,deleteButton);
-        return deleteUserDiv;
+    }
+
+    private void createClickListenerForAddButton() {
+        addButton.addClickListener(e -> {
+            User user = new User(null,
+                    nameField.getValue(),
+                    lastNameField.getValue(),
+                    phoneNumberField.getValue(),
+                    BigDecimal.valueOf(securityNumberField.getValue())
+                            .setScale(0,RoundingMode.CEILING)
+                            .toPlainString()
+            );
+            api.saveUser(user);
+            UI.getCurrent().getPage().reload();
+        });
+    }
+
+    private void createClickListenerForUpdateButton() {
+        updateButton.addClickListener(e -> {
+            User user = new User(idField.getValue().longValue(),
+                    nameField.getValue(),
+                    lastNameField.getValue(),
+                    phoneNumberField.getValue(),
+                    BigDecimal.valueOf(securityNumberField.getValue())
+                            .setScale(0, RoundingMode.CEILING)
+                            .toPlainString()
+            );
+            api.updateUser(user);
+            UI.getCurrent().getPage().reload();
+        });
+    }
+
+    private void createClickListenerForClearButton() {
+        clearButton.addClickListener(e -> {
+            idField.clear();
+            deleteIdField.clear();
+            nameField.clear();
+            lastNameField.clear();
+            phoneNumberField.clear();
+            securityNumberField.clear();
+        });
+    }
+
+    private void createClickListenerForDeleteButton() {
+        deleteButton.addClickListener(e -> {
+            api.deleteUser(deleteIdField.getValue().intValue());
+            UI.getCurrent().getPage().reload();
+        });
     }
 
 }
