@@ -2,8 +2,9 @@ package com.cryptoloanfront.views.installments;
 
 import com.cryptoloanfront.domain.Installment;
 import com.cryptoloanfront.domain.Loan;
+import com.cryptoloanfront.factory.DivFactory;
+import com.cryptoloanfront.factory.FieldFactory;
 import com.cryptoloanfront.service.CryptoLoanService;
-import com.cryptoloanfront.views.BaseView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -12,8 +13,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -22,31 +21,88 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Route("installments")
 @PageTitle("Crypto Loan")
 @CssImport("./styles/table-view.css")
-public class InstallmentsView extends BaseView {
+public class InstallmentsView extends Div {
 
+    private Button addButton, updateButton, clearButton, deleteButton;
+    private NumberField idField, deleteIdField, amountField, amountToPayField;
+    private ComboBox<String> loansCBox;
+    private ComboBox<Boolean> isPaidCBox;
+    private DatePicker datePicker;
+    private Grid<Installment> grid;
+    private final DivFactory divFactory;
+    private final FieldFactory fieldFactory;
+    private final List<Installment> installments;
+    private List<Loan> loans;
+    private Map<String,Loan> loanMap;
     private final CryptoLoanService api;
-    private final Grid<Installment> grid;
 
-    public InstallmentsView(@Autowired CryptoLoanService cryptoLoanService) {
-        api = cryptoLoanService;
-        List<Installment> installments = api.getInstallments();
+    public InstallmentsView(@Autowired CryptoLoanService cryptoLoanService,
+                     @Autowired DivFactory divFactory,
+                     @Autowired FieldFactory fieldFactory) {
+        this.divFactory = divFactory;
+        this.fieldFactory = fieldFactory;
+        this.api = cryptoLoanService;
+        this.installments = api.getInstallments();
+        Div addDiv = createAddDiv();
+        Div deleteDiv = createDeleteDiv();
+        Div gridDiv = createGridDiv();
+        createInteractions();
+        Div main = divFactory.createCompleteDiv("Installments",addDiv,deleteDiv,gridDiv);
+        add(main);
+    }
 
-        Div horizontalDiv = new Div();
-        horizontalDiv.setId("hDiv");
+    private Div createAddDiv() {
+        loans = api.getLoans();
+        loanMap = createLoanMap();
+        List<String> loanComboBoxChoices = loans.stream().map(this::convertLoanIntoString).collect(Collectors.toList());
+        Div addDiv = divFactory.createDivWithId("addDiv");
+        idField = fieldFactory.createIdNumberField();
+        datePicker = fieldFactory.createDatePicker("Last Updated *");
+        amountField = fieldFactory.createIdNumberField("Amount *", "1234.56");
+        amountToPayField = fieldFactory.createIdNumberField("Amount in paid *", "1234.56");
+        isPaidCBox = createIsPaidCBox();
+        loansCBox = fieldFactory.createComboBox("Loan",loanComboBoxChoices,"Loan","inputField");
+        List<Component> addMenuFieldsList = List.of(
+                idField,
+                datePicker,
+                amountField,
+                amountToPayField,
+                isPaidCBox,
+                loansCBox
+        );
+        addButton = fieldFactory.createAddButton();
+        updateButton = fieldFactory.createUpdateButton();
+        clearButton = fieldFactory.createClearButton();
+        addMenuFieldsList.forEach(addDiv::add);
+        addDiv.add(addButton,updateButton,clearButton);
+        return addDiv;
+    }
 
-        Div main = getMain();
+    private Div createDeleteDiv() {
+        Div deleteDiv = divFactory.createDivWithId("deleteDiv");
+        deleteIdField = fieldFactory.createDeleteIdNumberField();
+        deleteButton = fieldFactory.createDeleteButton();
+        deleteDiv.add(deleteIdField,deleteButton);
+        return deleteDiv;
+    }
 
-        main.add(new H1("Installments"));
-        main.add(horizontalDiv);
-        grid = new Grid<>();
+    private Div createGridDiv() {
+        Div div = divFactory.createDivWithId("grid-div");
+        grid = createGrid();
+        div.add(grid);
+        return div;
+    }
+
+    private Grid<Installment> createGrid() {
+        Grid<Installment> grid = new Grid<>();
         grid.setItems(installments);
         grid.addColumn(Installment::getId).setHeader("ID");
         grid.addColumn(Installment::getLocalDate).setHeader("Last Updated");
@@ -61,146 +117,128 @@ public class InstallmentsView extends BaseView {
                 "/" +
                 e.getLoan().getLoanType().getName())
                 .setHeader("Loan");
-        main.add(grid);
-
-        Div addLoanDiv = createLoanDiv();
-
-        Div deleteLoanDiv = createRemoveInstallmentDiv();
-
-        horizontalDiv.add(addLoanDiv,deleteLoanDiv);
-
-        Div annotation = new Div();
-        annotation.setText("Fields annotated with (*) are not required or even recommended when adding an entity.");
-        Div annotation2 = new Div();
-        annotation2.setText("Also select an entity to edit it faster.");
-        main.add(annotation,annotation2);
-
-        add(main);
+        return grid;
     }
 
-    private Div createLoanDiv() {
-        Div addInstallmentDiv = new Div();
-        addInstallmentDiv.setId("addDiv");
-        NumberField id = new NumberField("ID *");
-        id.setId("idInput");
-        id.setPlaceholder("0");
+    private void createInteractions() {
+        createGridSelectionListener();
+        createClickListenerForAddButton();
+        createClickListenerForUpdateButton();
+        createClickListenerForClearButton();
+        createClickListenerForDeleteButton();
+    }
 
-        DatePicker date = new DatePicker("Last Updated *");
-        date.setPlaceholder("1.11.1111");
-
-        NumberField amount = new NumberField("Amount *");
-        amount.setId("idInput");
-        amount.setPlaceholder("1234.56");
-        NumberField amountToPay = new NumberField("Amount In Paid *");
-        amountToPay.setPlaceholder("1234.56");
-
-        ComboBox<Boolean> isPaid = new ComboBox<>("Is Paid *");
-        isPaid.setItems(true,false);
-        isPaid.setPlaceholder("false");
-        isPaid.setClassName("booleanBox");
-
-        List<Loan> loans = api.getLoans();
-        Map<String, Loan> loansMap = new HashMap<>();
-        List<String> loansComboBoxChoices = new ArrayList<>();
-        loans.forEach(e -> {
-            String entry = e.getId()+"/"+e.getUser().getFirstName()+"."+e.getUser().getLastName().charAt(0)+"/"+e.getLoanType().getName();
-            loansMap.put(entry,e);
-            loansComboBoxChoices.add(entry);
-        });
-        ComboBox<String> loan = new ComboBox<>("Loan");
-        loan.setItems(loansComboBoxChoices);
-        loan.setPlaceholder("Loan");
-
+    private void createGridSelectionListener() {
         grid.addSelectionListener(e -> {
             if (e.getFirstSelectedItem().isPresent()) {
                 Installment installment = e.getFirstSelectedItem().get();
                 Loan loanEntry = installment.getLoan();
-                id.setValue(installment.getId().doubleValue());
-                date.setValue(installment.getLocalDate());
-                amount.setValue(Double.parseDouble(installment.getAmountInBorrowed()));
-                amountToPay.setValue(Double.parseDouble(installment.getAmountInPaid()));
-                isPaid.setValue(installment.isPaid());
-                loan.setValue(loanEntry.getId()+"/"+loanEntry.getUser().getFirstName()+"."+loanEntry.getUser().getLastName().charAt(0)+"/"+loanEntry.getLoanType().getName());
+
+                idField.setValue(installment.getId().doubleValue());
+                datePicker.setValue(installment.getLocalDate());
+                amountField.setValue(Double.parseDouble(installment.getAmountInBorrowed()));
+                amountToPayField.setValue(Double.parseDouble(installment.getAmountInPaid()));
+                isPaidCBox.setValue(installment.isPaid());
+                loansCBox.setValue(convertLoanIntoString(loanEntry));
             }
         });
+    }
 
-        List<Component> installmentData = List.of(id,
-                date,
-                amount,
-                amountToPay,
-                isPaid,
-                loan);
-        for (int i=1; i<installmentData.size(); i++) {
-            installmentData.get(i).setId("inputField");
-        }
-        Button add = new Button("Add");
-        add.addClickListener(e -> {
+    private void createClickListenerForAddButton() {
+        addButton.addClickListener(e -> {
+            Loan loanEntry = loanMap.get(loansCBox.getValue());
+            BigDecimal amountEntry = calculateInstallmentAmountFor(loanEntry);
+            BigDecimal finalAmount = exchangeAmount(amountEntry, loanEntry);
 
-            Loan loanEntry = loansMap.get(loan.getValue());
-            BigDecimal amountEntry = BigDecimal.valueOf(Double.parseDouble(loanEntry.getAmountToPay()))
-                    .divide(BigDecimal.valueOf(loanEntry.getInstallmentsTotal()), 9, RoundingMode.CEILING)
-                    .stripTrailingZeros();
-
-            BigDecimal finalAmount = amountEntry.multiply(api.exchangeCurrency(loanEntry.getCurrencyBorrowed(),loanEntry.getCurrencyPaidIn()));
             if (!loanEntry.getCurrencyPaidIn().equalsIgnoreCase("BTC")) {
                 finalAmount = finalAmount.setScale(2,RoundingMode.CEILING).stripTrailingZeros();
             } else {
                 finalAmount = finalAmount.stripTrailingZeros();
             }
 
-            api.saveInstallment(new Installment(null,
+            Installment installment = new Installment(
+                    null,
                     LocalDate.now(),
                     amountEntry.toPlainString(),
                     finalAmount.toPlainString(),
-                    isPaid.getValue()==null ? false : isPaid.getValue(),
+                    isPaidCBox.getValue()==null ? false : isPaidCBox.getValue(),
                     loanEntry
-            ));
-            UI.getCurrent().getPage().reload();
-            Notification.show("Installment "+id.getValue()+" Added");
-        });
-        Button update = new Button("Update");
-        update.addClickListener(e -> {
-            Loan loanEntry = loansMap.get(loan.getValue());
+            );
 
-                    api.updateInstallment(new Installment(id.getValue().longValue(),
-                            date.getValue(),
-                            BigDecimal.valueOf(amount.getValue()).stripTrailingZeros().toPlainString(),
-                            BigDecimal.valueOf(amountToPay.getValue()).stripTrailingZeros().toPlainString(),
-                            isPaid.getValue(),
-                            loanEntry
-                    ));
-                    UI.getCurrent().getPage().reload();
-                    Notification.show("Installment " + id.getValue() + " Updated");
-                });
-        Button clear = new Button("Clear");
-        clear.addClickListener(e -> {
-            id.clear();
-            date.clear();
-            amount.clear();
-            amountToPay.clear();
-            isPaid.clear();
-            loan.clear();
+            api.saveInstallment(installment);
+            UI.getCurrent().getPage().reload();
         });
-        installmentData.forEach(addInstallmentDiv::add);
-        addInstallmentDiv.add(add,update,clear);
-        return addInstallmentDiv;
     }
 
-    private Div createRemoveInstallmentDiv() {
-        Div deleteInstallmentDiv = new Div();
-        deleteInstallmentDiv.setId("deleteDiv");
-        NumberField deleteId = new NumberField("ID");
-        deleteId.setId("idInput");
-        deleteId.setPlaceholder("0");
-        Button deleteButton = new Button("Delete");
-        deleteButton.addClickListener(e -> {
-            api.deleteInstallment(deleteId.getValue().intValue());
+    private BigDecimal calculateInstallmentAmountFor(Loan loan) {
+        return BigDecimal.valueOf(Double.parseDouble(loan.getAmountToPay()))
+                .divide(BigDecimal.valueOf(loan.getInstallmentsTotal()), 9, RoundingMode.CEILING)
+                .stripTrailingZeros();
+    }
+
+    private BigDecimal exchangeAmount(BigDecimal amount, Loan loan) {
+        return amount.multiply(api.exchangeCurrency(loan.getCurrencyBorrowed(),loan.getCurrencyPaidIn()));
+    }
+
+    private void createClickListenerForUpdateButton() {
+        updateButton.addClickListener(e -> {
+            Loan loanEntry = loanMap.get(loansCBox.getValue());
+            Installment installment = new Installment(
+                    idField.getValue().longValue(),
+                    datePicker.getValue(),
+                    BigDecimal.valueOf(amountField.getValue()).stripTrailingZeros().toPlainString(),
+                    BigDecimal.valueOf(amountToPayField.getValue()).stripTrailingZeros().toPlainString(),
+                    isPaidCBox.getValue(),
+                    loanEntry
+            );
+
+            api.updateInstallment(installment);
             UI.getCurrent().getPage().reload();
-            Notification.show("Installment "+deleteId.getValue().intValue()+" Deleted");
         });
-        deleteButton.setId("deleteButton");
-        deleteInstallmentDiv.add(deleteId,deleteButton);
-        return deleteInstallmentDiv;
+    }
+
+    private void createClickListenerForClearButton() {
+        clearButton.addClickListener(e -> {
+            idField.clear();
+            deleteIdField.clear();
+            datePicker.clear();
+            amountField.clear();
+            amountToPayField.clear();
+            isPaidCBox.clear();
+            loansCBox.clear();
+        });
+    }
+
+    private void createClickListenerForDeleteButton() {
+        deleteButton.addClickListener(e -> {
+            api.deleteInstallment(deleteIdField.getValue().intValue());
+            UI.getCurrent().getPage().reload();
+        });
+    }
+
+    private String convertLoanIntoString(Loan loan) {
+        return loan.getId() +
+                "/" +
+                loan.getUser().getFirstName() +
+                "." +
+                loan.getUser().getLastName().charAt(0) +
+                "/" +
+                loan.getLoanType().getName();
+    }
+
+    private Map<String,Loan> createLoanMap() {
+        Map<String, Loan> map = new HashMap<>();
+        loans.forEach(e -> map.put(convertLoanIntoString(e),e));
+        return map;
+    }
+
+    private ComboBox<Boolean> createIsPaidCBox() {
+        ComboBox<Boolean> box = new ComboBox<>("Is Paid *");
+        List<Boolean> isPaidComboBoxChoices = List.of(false,true);
+        box.setItems(isPaidComboBoxChoices);
+        box.setPlaceholder("False");
+        box.setClassName("booleanBox");
+        return box;
     }
 
 }
