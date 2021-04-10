@@ -2,6 +2,7 @@ package com.cryptoloanfront.views;
 
 import com.cryptoloanfront.domain.User;
 import com.cryptoloanfront.factory.DivFactory;
+import com.cryptoloanfront.factory.FieldFactory;
 import com.cryptoloanfront.service.CryptoLoanService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -28,13 +29,18 @@ public class SomeView extends Div {
     private NumberField idField, deleteIdField, securityNumberField;
     private TextField nameField, lastNameField, phoneNumberField;
     private Grid<User> grid;
-    private final DivFactory divFactory = new DivFactory();
+    private final DivFactory divFactory;
+    private final FieldFactory fieldFactory;
     private final List<User> users;
     private final CryptoLoanService api;
 
-    public SomeView(@Autowired CryptoLoanService cryptoLoanService) {
-        api = cryptoLoanService;
-        users = api.getUsers();
+    public SomeView(@Autowired CryptoLoanService cryptoLoanService,
+                    @Autowired DivFactory divFactory,
+                    @Autowired FieldFactory fieldFactory) {
+        this.divFactory = divFactory;
+        this.fieldFactory = fieldFactory;
+        this.api = cryptoLoanService;
+        this.users = api.getUsers();
         Div addDiv = createAddDiv();
         Div deleteDiv = createDeleteDiv();
         Div gridDiv = createGridDiv();
@@ -45,16 +51,16 @@ public class SomeView extends Div {
 
     private Div createAddDiv() {
         Div addDiv = divFactory.createDivWithId("addDiv");
-        idField = divFactory.createIdNumberField();
-        nameField = divFactory.createTextField("First Name");
-        lastNameField = divFactory.createTextField("Last Name");
-        phoneNumberField = divFactory.createTextField("Phone Number","+12 345 678 910");
-        securityNumberField = divFactory.createNumberField("Social Security Num","012345678");
+        idField = fieldFactory.createIdNumberField();
+        nameField = fieldFactory.createTextField("First Name");
+        lastNameField = fieldFactory.createTextField("Last Name");
+        phoneNumberField = fieldFactory.createTextField("Phone Number","+12 345 678 910");
+        securityNumberField = fieldFactory.createNumberField("Social Security Num","012345678");
         List<Component> addMenuFieldsList = List.of(idField,nameField,lastNameField,phoneNumberField,securityNumberField);
 
-        addButton = divFactory.createAddButton();
-        updateButton = divFactory.createUpdateButton();
-        clearButton = divFactory.createClearButton();
+        addButton = fieldFactory.createAddButton();
+        updateButton = fieldFactory.createUpdateButton();
+        clearButton = fieldFactory.createClearButton();
 
         addMenuFieldsList.forEach(addDiv::add);
         addDiv.add(addButton,updateButton,clearButton);
@@ -64,8 +70,8 @@ public class SomeView extends Div {
 
     private Div createDeleteDiv() {
         Div deleteDiv = divFactory.createDivWithId("deleteDiv");
-        deleteIdField = divFactory.createDeleteIdNumberField();
-        deleteButton = divFactory.createDeleteButton();
+        deleteIdField = fieldFactory.createDeleteIdNumberField();
+        deleteButton = fieldFactory.createDeleteButton();
         deleteDiv.add(deleteIdField,deleteButton);
         return deleteDiv;
     }
